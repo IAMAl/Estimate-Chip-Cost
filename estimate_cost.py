@@ -8,12 +8,12 @@ Pi              = np.pi
 ##Fabrication Parameters
 #Baseline Process Node
 #Unit: [nm]
-Baseline_Process= 28.0
+Baseline_Process= 5.0
 
 ##Wafer Parameters
 #Price per Wafer
 #Unit: [US Dollar]
-Wafer_Price     = 100.0
+Wafer_Price     = {'90':1650, '65':1937, '40':2274, '28':2891, '16':3984, '12':3984, '10':5992, '7':9346, '5':16988}
 
 #Wafer Scale (Diameter)
 #Unit: mm
@@ -41,7 +41,7 @@ Cost_Package    = 2
 ##Market Parameters
 #Average Price in Market
 #Unit: [US Dollar]
-Price_Market    = 400
+Price_Market    = 10
 
 #Number of Units Installed
 #Unit: [Units]
@@ -49,7 +49,7 @@ N_installation  = 1000000
 
 #Market Share
 #Unit:  [%]
-Market_Share    = 25.0
+Market_Share    = 10.0
 
 #Sale Rate
 #Unit:  [%]
@@ -57,20 +57,20 @@ Sale_Rate       = 85.0
 
 #CAGR
 #Unit: [%]
-CAGR            = 35.5
+CAGR            = 20.0
 
 ##NRE Cost
 #Cost for Tool Software
 #Unit: [K US Dollar]
-Cost_Tools      = 36000000.0/105.0
+Cost_Tools      = 360000.0
 
 #Salary for Engineer per Year
 #Unit: [US Dollar]
-Engineer_Salary = 10000000.0
+Engineer_Salary = 120000.0
 
 #Number of Engineers
 #Units: [Persons]
-Engineer_Workers= 6
+Engineer_Workers= 10
 
 ##Design Parameters
 #Chip Area
@@ -85,11 +85,11 @@ st.title('Cost Estimation')
 st.subheader('Market Factors')
 
 #Chip Price
-price_market    = st.sidebar.slider('Price in Market [US Dollar]', 1, Price_Market*10, Price_Market)
+price_market    = st.sidebar.slider('Price in Market [US Dollar]', 10, Price_Market*500, Price_Market)
 st.text('Price in Market [US Dollar]    %s' % price_market)
 
 #Number of Installations
-number_of_installation = st.sidebar.slider('Installation in Market [Units]', 10000, N_installation*2, N_installation)
+number_of_installation = st.sidebar.slider('Installation in Market [Units]', 1000, N_installation*2, N_installation)
 st.text('Installation in Market [Units] %s' % number_of_installation)
 
 #Market Volume
@@ -121,12 +121,22 @@ wafer_area      = Pi * ((wafer_diameter)**2.0)/4
 st.text('Wafer Area [mm**2]             %s' % wafer_area)
 
 #Estimating Process
-estimating_process = st.sidebar.slider('Process [nm]', 1.0, 45.0, Baseline_Process)
-st.text('Estimating Process [nm]        %s' % estimating_process)
-
-#Scaling Factor
-scale_factor    = Baseline_Process / estimating_process
-st.text('Scale Factor                   %s' % scale_factor)
+Process_Node = st.sidebar.radio("Process Node [nm]", ('90', '65', '40', '28', '16', '12', '10', '7', '5'))
+estimating_process = 5
+if Process_Node == '90':
+    estimating_process = 90
+elif Process_Node == '65':
+    estimating_process = 65
+elif Process_Node == '40':
+    estimating_process = 40
+elif Process_Node == '28':
+    estimating_process = 28
+elif Process_Node == '16':
+    estimating_process = 65
+elif Process_Node == '12':
+    estimating_process = 12
+elif Process_Node == '7':
+    estimating_process = 7
 
 #Scale Die Yeld
 die_yield_factor= st.sidebar.slider('Die Yield Factor', 1.0, 15.0, Scale_Die_Yield)
@@ -136,47 +146,47 @@ st.text('Die Yield Factor               %s' % die_yield_factor)
 ##Design Parameters
 st.subheader('Fabrication Factors')
 #Chip Area
-chip_area       = st.sidebar.slider('Chip Area [mm**2]', 1.0, 800.0, Baseline_Chip_Area)
-st.text('Chip Area [mm**2]              %s' % chip_area)
+die_area       = st.sidebar.slider('Chip Area [mm**2]', 1.0, 900.0, Baseline_Chip_Area)
+st.text('Die Area [mm**2]               %s' % die_area)
 
 #Available Maximum Number of Chips before Yielding
 #Unit: Number of Chips
-negative_factor = (Pi * wafer_diameter) / np.sqrt(2 * Pi * chip_area / (scale_factor**2))
-num_chips       = int(np.floor((chip_area / (scale_factor**2) - negative_factor)))
-st.text('Max Chips/Wafer [Chips]        %s' % num_chips)
+negative_factor = (Pi * wafer_diameter) / np.sqrt(2 * Pi * die_area)
+num_chips       = int(np.floor((wafer_area/die_area - negative_factor)))
+st.text('Max Dies/Wafer [Dies]          %s' % num_chips)
 
 #Number of Defect Chip
-num_defect = st.sidebar.slider('Number of Defect Chips [Chips]', 1, num_chips, 1)
-st.text('Defect Chips/Wafer [Chips]     %s' % num_defect)
+num_defect = st.sidebar.slider('Number of Defect Dies [Dies]', 1, num_chips, 1)
+st.text('Defect Dies/Wafer [Dies]       %s' % num_defect)
 
-defect_density  = float(chip_area) * float(num_defect) / float(wafer_area)
-st.text('Defect Density [Defect/mm**2]  %s' % num_defect)
+defect_density  = float(die_area) * float(num_defect) / float(wafer_area)
+st.text('Defect Density [Defect/mm**2]  %s' % defect_density)
 
 #Die Yield per Wafer
 #Unit: [%]
-die_yield       = num_chips / np.power((1 + defect_density * chip_area), die_yield_factor)
-st.text('Die Yield/Wafer [Chips]        %s' % die_yield)
+die_yield       = (num_chips - num_defect) / num_chips
+st.text('Die Yield/Wafer [Percentage]   %s' % die_yield)
 
 #Number of Available Chips after Yielding
 #Unit: [Chips]
-N_Chips_Yield   = int(np.floor(die_yield * num_chips))
-st.text('Available Chips/Wafer [Chips]  %s' % N_Chips_Yield)
+N_Die_Yield   = int(np.floor(die_yield * num_chips))
+st.text('Available Dies/Wafer [Dies]    %s' % N_Die_Yield)
 
 #Number of Wafers needed for Target Market Share
 #Unit: [Wafers]
-N_Wafer         = int(np.ceil((N_installation * market_share / 100.0) / N_Chips_Yield))
+N_Wafer         = int(np.ceil((N_installation * market_share / 100.0) / N_Die_Yield))
 st.text('Number of Wafers [Wafers]      %s' % N_Wafer)
 
-wafer_price     = st.sidebar.slider('Wafer Price [US Dollar]', 1.0, Wafer_Price*2.0, Wafer_Price)
+wafer_price     = Wafer_Price[Process_Node]
 st.text('Wafer Price [US Dollar]        %s' % wafer_price)
 
 #Total Cost for Wafer
 Cost_Total_Wafer= N_Wafer * wafer_price
 st.text('Total Wafer Cost [US Dollar]   %s' % Cost_Total_Wafer)
 
-#Chip Cost
-Chip_Cost       = float(Cost_Total_Wafer) / float(N_Chips_Yield)
-st.text('Total Chip Cost [US Dollar]    %s' % Chip_Cost)
+#Die Cost
+Die_Cost        = float(Cost_Total_Wafer) / float(N_Die_Yield)
+st.text('Total Die Cost [US Dollar]     %s' % Die_Cost)
 
 ####NRE Cost Parameters
 st.subheader('NRE Cost Factors')
@@ -205,7 +215,7 @@ st.text('Total NRE Cost [US Dollar]     %s' % (Cost_NRE))
 ####Total Cost
 st.subheader('Total Cost')
 #Cost per Year
-Cost_Year       = Cost_Total_Wafer + (Cost_Test + Cost_Package) * N_Chips_Yield + Cost_NRE
+Cost_Year       = Cost_Total_Wafer + (Cost_Test + Cost_Package) * N_Die_Yield + Cost_NRE
 st.text('Total Cost/Year [M US Dollar]    %s' % (Cost_Year / 1000000))
 
 ####Product Price
